@@ -1,0 +1,24 @@
+# Core RAG
+langchain
+langgraph
+langchain-community
+
+# Embeddings + vector store
+sentence-transformers
+chromadb
+
+# PDF extraction
+pymupdf
+pdfplumber
+
+# App
+streamlit
+
+# Utilities
+python-dotenv
+langdetect
+pandas
+tqdm
+
+# Eval
+scikit-learn

@@ -1,0 +1,26 @@
+# Environments
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+
+# Data (raw PDFs can be large / re-downloadable — keep repo light)
+data/raw/*.pdf
+data/processed/*.faiss
+data/processed/*.index
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# Streamlit
+.streamlit/secrets.toml
