@@ -24,3 +24,9 @@ data/processed/*.index
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Icon
+Icons
+
+# Logs
+logs/
