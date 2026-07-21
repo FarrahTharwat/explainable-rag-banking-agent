@@ -1,8 +1,67 @@
 """
-Embedding model wrapper. Uses a multilingual embedding model so English
-queries can retrieve Arabic source chunks and vice versa.
+Embedding model wrapper.
+
+Uses a multilingual sentence-embedding model so a question in English can
+retrieve an Arabic chunk (and vice versa) — the model maps both into the
+same vector space based on meaning, not surface language.
+
+Model: intfloat/multilingual-e5-base. Note this model expects a "query: "
+or "passage: " prefix on input text (part of how it was trained) —
+skipping the prefix works but gives noticeably worse retrieval quality,
+so don't drop it even though it looks redundant.
 """
 
+import os
+from dotenv import load_dotenv
+from sentence_transformers import SentenceTransformer
 
-def get_embedding_model():
-    raise NotImplementedError
+load_dotenv()  # reads .env into the environment so EMBEDDING_MODEL etc. actually take effect
+
+_model = None  # lazy-loaded singleton so we don't reload the model on every call
+
+# Default model — override by setting EMBEDDING_MODEL in your .env file.
+# intfloat/multilingual-e5-large is worth trying if base isn't discriminating
+# well enough on cross-lingual (e.g. English query -> Arabic chunk) retrieval —
+# it's a heavier download but meaningfully stronger on this kind of task.
+DEFAULT_MODEL = "intfloat/multilingual-e5-base"
+
+
+def get_embedding_model(model_name: str = None) -> SentenceTransformer:
+    global _model
+    if _model is None:
+        resolved_name = model_name or os.getenv("EMBEDDING_MODEL", DEFAULT_MODEL)
+        _model = SentenceTransformer(resolved_name)
+    return _model
+
+
+def embed_passages(texts: list[str]) -> list[list[float]]:
+    """Embed document chunks for storage. Use this for corpus text, not queries."""
+    model = get_embedding_model()
+    prefixed = [f"passage: {t}" for t in texts]
+    return model.encode(prefixed, normalize_embeddings=True).tolist()
+
+
+def embed_query(text: str) -> list[float]:
+    """Embed a user question for retrieval. Use this for queries, not corpus text."""
+    model = get_embedding_model()
+    return model.encode(f"query: {text}", normalize_embeddings=True).tolist()
+
+
+if __name__ == "__main__":
+    # Quick sanity check: an English query should score highest against
+    # its true Arabic match, not against an unrelated Arabic chunk.
+    sample_chunks = [
+        "رسوم فتح الحساب: يتم تحصيل رسوم قدرها 50 جنيه عند فتح حساب التوفير",  # account opening fees
+        "غرامة كسر الشهادة قبل تاريخ الاستحقاق تعادل نسبة من قيمة الشهادة",       # early break penalty
+    ]
+    query = "What is the penalty for breaking a certificate early?"
+
+    chunk_vectors = embed_passages(sample_chunks)
+    query_vector = embed_query(query)
+
+    import numpy as np
+    scores = [float(np.dot(query_vector, cv)) for cv in chunk_vectors]
+    print("Similarity scores (higher = more relevant):")
+    for chunk, score in zip(sample_chunks, scores):
+        print(f"  {score:.4f} — {chunk[:50]}...")
+    print(f"\nExpected: chunk 2 (early break penalty) should score highest.")

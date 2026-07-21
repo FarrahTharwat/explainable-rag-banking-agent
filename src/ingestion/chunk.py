@@ -31,9 +31,16 @@ HEADING_FONT_EXCLUDE_SUBSTR = "Arial"
 # heading candidate to have a minimum number of actual letters (not just
 # punctuation/digits/dots) before treating it as a real section title.
 MIN_HEADING_LETTERS = 4
-
 CHUNK_SIZE = 1200       # characters per chunk (rough proxy for tokens) — safety net for unusually long sections
 CHUNK_OVERLAP = 200
+
+# Chunks with fewer real letters than this get dropped before embedding.
+# Degenerate content (e.g. a signature line that's just "..........")
+# produces a generic, low-information embedding vector that can end up
+# suspiciously close to many unrelated queries — real problem observed:
+# a pure-dots chunk outranked the actual correct answer for a real query.
+# Filtering these out before indexing is cheap insurance against that.
+MIN_CHUNK_LETTERS = 15
 
 
 def is_heading(line: dict) -> bool:
@@ -99,6 +106,9 @@ def chunk_document(lines: list[dict], source_metadata: dict) -> list[dict]:
     for section in sections:
         windows = split_into_windows(section["text"])
         for idx, window_text in enumerate(windows):
+            letter_count = sum(1 for ch in window_text if ch.isalpha())
+            if letter_count < MIN_CHUNK_LETTERS:
+                continue  # skip degenerate chunks (see MIN_CHUNK_LETTERS docstring above)
             chunks.append({
                 "text": window_text,
                 "metadata": {

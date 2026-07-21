@@ -11,8 +11,13 @@ __pycache__/
 data/raw/*.pdf
 data/processed/*.faiss
 data/processed/*.index
+data/processed/*.pkl
+data/*
+data/processed/*.json
+data/raw/*.json
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+
 
 # Notebooks checkpoints
 .ipynb_checkpoints/
@@ -30,3 +35,5 @@ Icons
 
 # Logs
 logs/
+
+
