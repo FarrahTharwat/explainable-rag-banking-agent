@@ -51,3 +51,28 @@ a meaningfully harder problem and out of scope for this project's
 timeline. Worth 1-2 more real-document test cases before assuming this
 heuristic transfers cleanly beyond the current corpus.
 
+## Embedding model: base vs large (measured, not assumed)
+
+Initial testing with `multilingual-e5-base` showed weak retrieval
+discrimination on cross-lingual queries specifically — an English question
+against Arabic source chunks. Score spread across the entire 55-chunk
+corpus was only ~0.055 (cosine similarity), meaning nearly everything
+looked "similarly relevant" regardless of actual topic. The genuinely
+correct chunk for a real test query ranked #13 of 55.
+
+Running the *same* question in Arabic against the same corpus/model
+ranked the correct chunk #1, with a much wider score spread (~0.100) —
+confirming the weakness was specifically about cross-lingual retrieval,
+not the chunking or corpus quality.
+
+Switching to `multilingual-e5-large` (same architecture family, larger
+model) improved the English-query rank to #3 of 55, with wider
+discrimination too (~0.070 spread). Tradeoff: ~2.2GB download vs ~450MB
+for base. Given cross-lingual retrieval (Arabic circulars,
+English-or-Arabic questions) is the actual point of this project, the
+larger model is used as the default — see `src/rag/embed.py`.
+
+Rank #3 (not #1) is acceptable in practice: the retrieval step returns
+top-k chunks (k=3-5) to the generation step, not just the single best
+match, so the correct chunk is still included in what the LLM sees.
+

@@ -20,10 +20,13 @@ load_dotenv()  # reads .env into the environment so EMBEDDING_MODEL etc. actuall
 _model = None  # lazy-loaded singleton so we don't reload the model on every call
 
 # Default model — override by setting EMBEDDING_MODEL in your .env file.
-# intfloat/multilingual-e5-large is worth trying if base isn't discriminating
-# well enough on cross-lingual (e.g. English query -> Arabic chunk) retrieval —
-# it's a heavier download but meaningfully stronger on this kind of task.
-DEFAULT_MODEL = "intfloat/multilingual-e5-base"
+# Using the large variant by default: testing on this project's real corpus
+# showed base struggled with cross-lingual (English query -> Arabic chunk)
+# retrieval — correct chunk ranked #13 of 55 — while large ranked it #3 of 55
+# on the same query (see docs/architecture.md for the full comparison).
+# The tradeoff is a heavier download (~2.2GB vs ~450MB) — worth it here since
+# cross-lingual retrieval is the whole point of this project.
+DEFAULT_MODEL = "intfloat/multilingual-e5-large"
 
 
 def get_embedding_model(model_name: str = None) -> SentenceTransformer:
